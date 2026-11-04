@@ -195,11 +195,17 @@ const index = {
 }
 writeFileSync(join(REGISTRY_DIR, 'index.json'), JSON.stringify(index, null, 2) + '\n')
 
-// raw.githubusercontent.com 在部分网络下解析不了，再出一份走 jsDelivr 的索引
+// raw.githubusercontent.com 在部分网络下解析不了：再出两份走镜像的索引（装包地址也一起换）
 if (owner) {
-  const cdn = JSON.parse(JSON.stringify(index))
-  cdn.assetsBase = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/registry/`
-  writeFileSync(join(REGISTRY_DIR, 'index-cdn.json'), JSON.stringify(cdn, null, 2) + '\n')
+  const mirrors = {
+    'index-cdn.json': `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/registry/`,
+    'index-ghproxy.json': `https://ghproxy.net/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/registry/`,
+  }
+  for (const [file, base] of Object.entries(mirrors)) {
+    const copy = JSON.parse(JSON.stringify(index))
+    copy.assetsBase = base
+    writeFileSync(join(REGISTRY_DIR, file), JSON.stringify(copy, null, 2) + '\n')
+  }
 }
 
 console.log('模块：' + manifest.name + ' ' + manifest.id + '@' + manifest.version)
