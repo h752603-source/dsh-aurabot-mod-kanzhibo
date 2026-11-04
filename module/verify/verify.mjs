@@ -7,7 +7,7 @@
 // 然后跑：工具/命令/接口能不能注册上、tick 的时段判定、灯牌与评论的每日去重、
 // 上次崩溃后「刷抖音」能不能自己放回来。
 
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import mod from '../index.mjs'
@@ -97,9 +97,12 @@ const st = await tool(b.got, 'kanzhibo_status').execute({})
 ok('kanzhibo_status 能回话', st.ok && /挂直播/.test(st.message), st.message.split('\n')[0])
 const sc = await b.out.selfCheck()
 ok('selfCheck 说清浏览器和 CDP', /浏览器：/.test(sc) && /CDP：/.test(sc))
-ok('selfCheck 认出 Edge 路径', /msedge\.exe|chrome\.exe/i.test(sc), (sc.match(/浏览器：(.*)/) || [])[1])
+// 找得到浏览器就要是真路径；找不到（比如 CI 的 Linux runner）也要老实说「没找到」
+const binLine = ((sc.match(/浏览器：(.*)/) || [])[1] || '').trim()
+const looksLikePath = /msedge\.exe|chrome\.exe/i.test(binLine)
+ok('selfCheck 的浏览器那一行能用', looksLikePath ? existsSync(binLine) : /没找到/.test(binLine), binLine || '（空）')
 const r1 = await route(b.got, '/selfcheck')({})
-ok('/selfcheck 返回 JSON', r1.ok && r1.browser && typeof r1.inWindow === 'boolean', 'inWindow=' + r1.inWindow)
+ok('/selfcheck 返回 JSON', r1.ok === true && typeof r1.browser === 'string' && typeof r1.inWindow === 'boolean', 'inWindow=' + r1.inWindow + ' browser=' + (r1.browser || '（没找到）'))
 
 console.log('\n=== 4. 时段判定（含跨午夜） ===')
 const win = b.out._debug.inWindow
