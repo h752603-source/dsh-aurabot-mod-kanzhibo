@@ -1,0 +1,13 @@
+# Aurabot 运行时目录（模块跑起来才生成，别提交）
+modules-data/
+.aurabot-cache/
+*.log
+
+# 打包 / 依赖
+node_modules/
+*.tgz
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+desktop.ini
