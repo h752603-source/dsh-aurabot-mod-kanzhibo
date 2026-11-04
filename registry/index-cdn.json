@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-11-04T10:34:08.844Z",
+  "generatedAt": "2026-11-04T10:39:06.322Z",
   "assetsBase": "https://cdn.jsdelivr.net/gh/h752603-source/dsh-aurabot-mod-kanzhibo@main/registry/",
   "modules": [
     {
@@ -31,9 +31,9 @@
         "plugin-internals"
       ],
       "files": 4,
-      "bytes": 25015,
+      "bytes": 25009,
       "path": "kanzhibo-0.3.0.zip",
-      "sha256": "63c7bb8fea5c296d4632c32e9430881bee7d65fa116c82df275c1fee27589779"
+      "sha256": "b835c2f828bb234a7444a8325c39e2e32d957fc309890ac16334b5cee83d37b5"
     }
   ],
   "revoked": []

@@ -31,7 +31,7 @@ function boot({ settings = {}, cfg = {}, state = null, dir = null } = {}) {
     liveCommentOn: false, liveComment: '', commentDelaySec: 8, renewBadge: false, badgeDelaySec: 30, minuteReport: false,
     ...settings,
   }
-  const config = { ownerQQ: '752603664', douyin: { enabled: true, autoBrowse: false }, ...cfg }
+  const config = { ownerQQ: '10001', douyin: { enabled: true, autoBrowse: false }, ...cfg }
   const got = { tools: [], rules: [], commands: [], routes: [], events: [], intervals: [], sent: [], logs: [] }
   const noop = () => () => {}
 

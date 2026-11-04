@@ -1,11 +1,20 @@
 # kanzhibo · 看直播（Aurabot 扩展模块）
 
+[![version](docs/badges/version.svg)](module/module.json)
+[![plugin api](docs/badges/plugin-api.svg)](AGENTS.md#5-运行时前提)
+[![node](docs/badges/node.svg)](AGENTS.md#5-运行时前提)
+[![platform](docs/badges/platform.svg)](AGENTS.md#1-装到哪里)
+[![license](docs/badges/license.svg)](LICENSE)
+[![check](https://github.com/h752603-source/dsh-aurabot-mod-kanzhibo/actions/workflows/check.yml/badge.svg)](https://github.com/h752603-source/dsh-aurabot-mod-kanzhibo/actions/workflows/check.yml)
+
 给 [Aurabot（大肥鱼 QQ 插件）](https://github.com/accomplish07zrh-eng/dsh-aurabot-qq) 加的本事：
 **用一台独立浏览器挂进抖音直播间**，进房、发一条定制评论、续粉丝团灯牌；挂着的时候自动暂停「刷抖音」。
 
 - 模块 id：`kanzhibo` ｜ 版本：`0.3.0` ｜ 扩展接口：v1 ｜ 需要插件 ≥ 1.2.0
 - 平台：Windows / macOS（装有 Edge 或 Chrome）
 - 许可：MIT
+
+![看直播：一条完整的链路](docs/how.png)
 
 ## 装法一：手动复制（推荐）
 
@@ -49,6 +58,10 @@ set LIVE=1 && node verify/verify.mjs   # 再加 3 项：真起 Edge / CDP 连上
 QQ 里发 `/看直播 自检`，会给一份体检单：浏览器路径、专用 profile、CDP 端口、时段在不在内、
 刷抖音暂停状态、今日评论 / 灯牌完成没有、最近一条日志。面板「已安装」页看这一行有没有红色报错。
 
+![自检输出](docs/selfcheck.png)
+
+（图里是示意：房间号、路径都是占位，真机上是你自己的）
+
 ## 用起来长这样
 
 ```
@@ -78,9 +91,14 @@ QQ 里发 `/看直播 自检`，会给一份体检单：浏览器路径、专用
 ├─ registry/
 │  ├─ kanzhibo-0.3.0.zip      ← 可直接安装的包（zip 根目录 = 模块内容）
 │  └─ index.json              ← 模块市场索引（schema 1，带 sha256）
+├─ docs/
+│  ├─ how.png                 ← 仓库首页那张链路图
+│  ├─ selfcheck.png           ← 自检输出示意（房间号 / 路径都是占位）
+│  └─ badges/*.svg            ← 本地静态徽章（不依赖 shields.io）
 ├─ tools/
 │  ├─ pack.mjs                ← 一键重打包：算 sha256、写索引、回读校验
 │  ├─ check.mjs               ← 发布前自洽检查（索引/版本/sha/自检），CI 也跑这个
+│  ├─ badges.mjs              ← 重新生成 docs/badges/*.svg（改了版本号就跑一次）
 │  └─ publish.mjs             ← 一条命令发到 GitHub（不需要装 git，走 Git Data API）
 └─ .github/workflows/check.yml ← 每次 push 自动检查索引和包对不对得上
 ```
