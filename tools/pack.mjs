@@ -195,6 +195,13 @@ const index = {
 }
 writeFileSync(join(REGISTRY_DIR, 'index.json'), JSON.stringify(index, null, 2) + '\n')
 
+// raw.githubusercontent.com 在部分网络下解析不了，再出一份走 jsDelivr 的索引
+if (owner) {
+  const cdn = JSON.parse(JSON.stringify(index))
+  cdn.assetsBase = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/registry/`
+  writeFileSync(join(REGISTRY_DIR, 'index-cdn.json'), JSON.stringify(cdn, null, 2) + '\n')
+}
+
 console.log('模块：' + manifest.name + ' ' + manifest.id + '@' + manifest.version)
 console.log('文件：' + entries.map((e) => e.name).join(', '))
 console.log('打包：registry/' + zipName + '（' + (zipBuf.length / 1024).toFixed(1) + ' KB，回读校验通过）')

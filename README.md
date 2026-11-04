@@ -31,6 +31,12 @@ mkdir -p "$dst/verify" && cp -R module/. "$dst"/
    `AURABOT_REGISTRY_URL=https://raw.githubusercontent.com/OWNER/REPO/main/registry/index.json`
 2. 重启插件 → 面板「模块市场」刷新 → 安装 `kanzhibo`
 
+`raw.githubusercontent.com` 打不开（国内常见）就换成 CDN 那份索引，`pack.mjs` 会自动生成 `registry/index-cdn.json`：
+
+```
+AURABOT_REGISTRY_URL=https://cdn.jsdelivr.net/gh/OWNER/REPO@main/registry/index-cdn.json
+```
+
 > `OWNER/REPO` 换成实际账号：跑 `node tools/pack.mjs --owner=<你的用户名>` 会自动把 `assetsBase` 写对。
 
 ## 装完怎么验
