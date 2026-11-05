@@ -3,7 +3,7 @@
 //   1. registry/index.json 里每个模块的 sha256 / bytes 和 zip 对不对得上
 //   2. 模块 zip 里的 module.json 的 id / version 和索引对不对得上
 //   3. module/module.json 的版本和 module/index.mjs 里的 version 对不对得上
-//   4. 模块能跑离线自检（verify/verify.mjs）
+//   4. 模块能跑离线自检（test/verify.mjs）
 // 任何一项不对退出码 1。
 
 import { createHash } from 'node:crypto'
@@ -52,7 +52,7 @@ idInCode === manifest.id ? ok('index.mjs 的 id 和 module.json 一致（' + idI
 
 console.log('\n跑模块离线自检…')
 try {
-  const out = execFileSync(process.execPath, [join(ROOT, 'module', 'verify', 'verify.mjs')], { cwd: ROOT, encoding: 'utf8' })
+  const out = execFileSync(process.execPath, [join(ROOT, 'module', 'test', 'verify.mjs')], { cwd: ROOT, encoding: 'utf8' })
   const last = out.trim().split('\n').pop()
   if (/0 失败/.test(last)) ok('verify: ' + last)
   else bad('verify: ' + last)

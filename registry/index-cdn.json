@@ -1,18 +1,17 @@
 {
   "schema": 1,
-  "generatedAt": "2026-11-04T10:42:08.944Z",
+  "generatedAt": "2026-11-05T05:15:31.412Z",
   "assetsBase": "https://cdn.jsdelivr.net/gh/h752603-source/dsh-aurabot-mod-kanzhibo@main/registry/",
   "modules": [
     {
       "id": "kanzhibo",
       "name": "看直播",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "用一台独立 Edge 通过 CDP 挂在抖音直播间：进房、进房后发一条定制评论、续粉丝团灯牌；挂着的时候自动暂停刷抖音。",
       "category": "platform",
       "tags": [
         "抖音",
         "直播",
-        "直播间",
         "挂机",
         "灯牌",
         "CDP"
@@ -30,10 +29,10 @@
         "plugin-config",
         "plugin-internals"
       ],
-      "files": 4,
-      "bytes": 25009,
-      "path": "kanzhibo-0.3.0.zip",
-      "sha256": "b835c2f828bb234a7444a8325c39e2e32d957fc309890ac16334b5cee83d37b5"
+      "files": 5,
+      "bytes": 27484,
+      "path": "kanzhibo-0.3.1.zip",
+      "sha256": "f17356c3ce933340d3087dfca253084b543d968fca975881d1003f13882878b8"
     }
   ],
   "revoked": []

@@ -21,7 +21,7 @@ const ok = (name, cond, extra = '') => {
 }
 
 /** 造一个假的 api，并把模块 setup 起来 */
-function boot({ settings = {}, cfg = {}, state = null, dir = null } = {}) {
+function boot({ settings = {}, cfg = {}, state = null, dir = null, owner = true } = {}) {
   const dataDir = dir || mkdtempSync(join(tmpdir(), 'kanzhibo-'))
   mkdirSync(dataDir, { recursive: true })
   if (state) writeFileSync(join(dataDir, 'state.json'), JSON.stringify(state))
@@ -63,7 +63,7 @@ function boot({ settings = {}, cfg = {}, state = null, dir = null } = {}) {
     onebot: async () => ({}), ask: async () => '', think: async () => '',
     isOwner: () => true, has: () => false, use: () => null, lazy: () => ({}), lib: () => ({}),
     core: {
-      hub: { turnHasOwner: () => true, groupName: () => '群', runSystemTurn: async () => '', deliver: async () => {} },
+      hub: { turnHasOwner: () => owner, groupName: () => '群', runSystemTurn: async () => '', deliver: async () => {} },
       onebot: { call: async () => ({}) }, http: {}, modules: {}, logger: {}, root: dataDir,
       local: { active: () => false, call: async () => ({}) },
     },
@@ -91,6 +91,13 @@ ok('一条给模型的规则', b.got.rules.length === 1 && /kanzhibo_enter/.test
 ok('两个网页接口 /status /selfcheck', Boolean(route(b.got, '/status')) && Boolean(route(b.got, '/selfcheck')))
 ok('注册了配置监听（改间隔热生效）', b.got.events.some(([n]) => n === 'config'))
 ok('导出了 tick / selfCheck / status', typeof b.out.tick === 'function' && typeof b.out.selfCheck === 'function' && typeof b.out.status === 'function')
+
+console.log('\n=== 2.5 主人权限：别人拿不到操作类工具 ===')
+const other = boot({ owner: false })
+ok('非主人只剩 1 个工具', other.got.tools.length === 1, other.got.tools.map((t) => t.name).join(', '))
+ok('非主人没有进房 / 停止 / 送礼 / 说话', ['kanzhibo_enter', 'kanzhibo_stop', 'kanzhibo_gift', 'kanzhibo_say'].every((n) => !tool(other.got, n)))
+const stOther = await tool(other.got, 'kanzhibo_status').execute({})
+ok('非主人问状态不暴露在看谁', /挂直播/.test(stOther.message) && !/目标：/.test(stOther.message), stOther.message)
 
 console.log('\n=== 3. 状态与自检 ===')
 const st = await tool(b.got, 'kanzhibo_status').execute({})

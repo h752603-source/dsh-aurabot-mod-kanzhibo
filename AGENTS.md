@@ -5,7 +5,7 @@
 
 ## 0. 一句话
 
-这是一个 **Aurabot（大肥鱼 QQ 插件）的扩展模块**，id `kanzhibo`，版本 `0.3.0`，扩展接口 v1。
+这是一个 **Aurabot（大肥鱼 QQ 插件）的扩展模块**，id `kanzhibo`，版本 `0.3.1`，扩展接口 v1。
 功能：用一台独立 Edge/Chrome 通过 CDP 挂进抖音直播间，进房、发一条定制评论、续粉丝团灯牌，
 挂着的时候自动把 `douyin`（刷抖音）模块关掉，离开后放回来。
 
@@ -30,14 +30,14 @@
 module/index.mjs        →  modules/kanzhibo/index.mjs          # 入口，必须
 module/module.json      →  modules/kanzhibo/module.json        # 元数据，必须（模块市场/校验要用）
 module/README.md        →  modules/kanzhibo/README.md          # 可选
-module/verify/verify.mjs → modules/kanzhibo/verify/verify.mjs  # 可选，但装完请用它验证
+module/test/verify.mjs   → modules/kanzhibo/test/verify.mjs  # 可选，但装完请用它验证
 ```
 
 Windows PowerShell 一把梭：
 
 ```powershell
 $dst = "$env:USERPROFILE\.dsh\plugins-data\aurabot\modules\kanzhibo"
-New-Item -ItemType Directory -Force "$dst\verify" | Out-Null
+New-Item -ItemType Directory -Force "$dst\test" | Out-Null
 Copy-Item .\module\* -Destination $dst -Recurse -Force
 ```
 
@@ -45,7 +45,7 @@ macOS / Linux：
 
 ```bash
 dst=~/.dsh/plugins-data/aurabot/modules/kanzhibo
-mkdir -p "$dst/verify" && cp -R module/. "$dst"/
+mkdir -p "$dst/test" && cp -R module/. "$dst"/
 ```
 
 ### B. 走「模块市场」（有索引时）
@@ -65,9 +65,9 @@ Windows：`setx AURABOT_REGISTRY_URL "…"`（要重启插件），然后面板�
    - 出现 `模块「kanzhibo」加载失败：…` → 把原因读完再改，别猜
 2. **跑离线自检**（在模块目录里）：
    ```bash
-   node verify/verify.mjs
+   node test/verify.mjs
    ```
-   期望最后一行：`结果：33 通过 / 0 失败`。加 `LIVE=1` 会多 3 项真浏览器测试（会短暂弹一个 Edge 窗口）。
+   期望最后一行：`结果：36 通过 / 0 失败`。加 `LIVE=1` 会多 3 项真浏览器测试（会短暂弹一个 Edge 窗口）。
 3. **面板**：`http://127.0.0.1:<dsh-web-port>` → 已安装 → 「看直播」这一行应该是「跑着」、无红色报错。
    命令行等价物（QQ 里发）：`/看直播 自检`。
 
@@ -122,7 +122,7 @@ Windows：`setx AURABOT_REGISTRY_URL "…"`（要重启插件），然后面板�
 | `pauseDouyin()` / `resumeDouyin()` | 和刷抖音互斥，暂停状态落 `state.json` |
 | `tick()` | 定时主循环：关浏览器 / 进房 / 暂停刷抖音 / 评论 / 灯牌 |
 | `stopNow()` / `selfCheck()` / `statusLine()` | 收工、体检单、一句话状态 |
-| `api.tool(...)` | 5 个给模型用的工具 |
+| `api.tool(...)` | 5 个给模型用的工具（操作类只在「这一轮有主人说话」时给，别人只剩 `kanzhibo_status`） |
 | `api.command({ name: '看直播' })` | `/看直播 开|关|状态|进|收工|自检` |
 | `api.route('/status' \| '/selfcheck')` | `GET /aurabot/api/ext/kanzhibo/...` |
 
@@ -134,9 +134,13 @@ Windows：`setx AURABOT_REGISTRY_URL "…"`（要重启插件），然后面板�
 ## 8. 别做的事
 
 - 不要改 `douyin` 模块本体；暂停刷抖音只改那一个布尔值 `config.douyin.enabled`。
-- 不要在 `verify/verify.mjs` 里发真消息、不要连真直播间（它只用假 api + 临时目录）。
+- 不要在 `test/verify.mjs` 里发真消息、不要连真直播间（它只用假 api + 临时目录）。
 - 不要把 `modules-data/`、`.aurabot-cache/`、`live-profile/` 提交进 git。
 - 不要在没有主人明确说的句子里调用 `kanzhibo_gift`（送礼是真花钱，且无法撤回）。
+- 不要把 `kanzhibo_enter` / `kanzhibo_stop` / `kanzhibo_gift` / `kanzhibo_say` 的主人校验去掉——
+  它们在群聊里也挂着，去掉就等于群里任何人都能让她开浏览器、花抖币、用主人的号发言。
+- 不要在 `resumeDouyin({ delayMs })` 里重复重排定时器：`tick()` 每轮都会调一次，
+  重排等于把冷却无限推后（刷抖音再也放不回来），还会把日志刷满。
 
 ## 9. 出问题先看这三个地方
 
@@ -147,10 +151,10 @@ Windows：`setx AURABOT_REGISTRY_URL "…"`（要重启插件），然后面板�
 ## 10. 贴给代理的一段话（懒人版）
 
 ```
-这是 Aurabot 的扩展模块 kanzhibo 0.3.0。请读仓库里的 AGENTS.md，然后：
+这是 Aurabot 的扩展模块 kanzhibo 0.3.1。请读仓库里的 AGENTS.md，然后：
 1) 把 module/ 拷到 ~/.dsh/plugins-data/aurabot/modules/kanzhibo/（只碰这个目录）；
 2) 等 5 秒，看 logs/aurabot-<日期>.log 有没有「模块「看直播」（自己写的）已启动」；
-3) 在模块目录跑 node verify/verify.mjs，要 33 通过 / 0 失败；
+3) 在模块目录跑 node test/verify.mjs，要 36 通过 / 0 失败；
 4) 告诉我面板「已安装」页的报错，和 QQ 里 /看直播 自检 的输出。
 不要改插件本体，不要改别的模块。
 ```

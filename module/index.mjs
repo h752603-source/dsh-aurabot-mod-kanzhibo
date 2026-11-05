@@ -79,7 +79,7 @@ class Cdp {
 export default {
   id: 'kanzhibo',
   name: '看直播',
-  version: '0.3.0',
+  version: '0.3.1',
   api: 1,
   description: '挂直播间 + 进房后发一条定制评论 + 续灯牌；挂着的时候自动暂停刷抖音',
 
@@ -217,6 +217,10 @@ export default {
       if (!pausedDouyin && !resumeTimer) return
       const cur0 = api.config().douyin || {}
       if (delayMs > 0) {
+        // 2026-11-05 修：已经在冷却里就别再往后推。
+        //   tick 每轮都会调一次，原来每轮都重排定时器 + 打一条「直播间刚关」，
+        //   冷却时间被无限推后（刷抖音永远放不回来），日志还被刷满。
+        if (resumeAt > Date.now()) return
         // 直播间刚关：抖音那边可能还占着同一个浏览器，先晾一会儿再放回去
         resumeAt = Date.now() + delayMs
         saveState({ pausedDouyin: true, resumeAt })
@@ -729,7 +733,7 @@ export default {
       await ensureBrowser()
       let url = await currentUrl()
       if (!url) {
-        cdp.close()
+        try { cdp?.close() } catch {}
         cdp = null
         await ensureBrowser()
         url = await currentUrl()
@@ -909,20 +913,33 @@ export default {
       return { ok: true, message: '直播看完了，浏览器关了，刷抖音已经放回来' }
     }
 
-    /** 状态一句话，工具和命令共用。 */
-    const statusLine = async () => {
+    /** 状态一句话，工具和命令共用。showDetail=false 时只说「开没开、在不在时段」，不暴露目标主播和当前地址。 */
+    const statusLine = async (showDetail = true) => {
       const s = api.settings()
       const url = cdp ? (await currentUrl()).slice(0, 70) : '没开浏览器'
       const window = s.schedule ? `${s.startTime}-${s.endTime}（${inWindow() ? '在时段内' : '不在时段内'}）` : '不限时段'
-      return '挂直播：' + (s.enabled ? '开' : '关') + '｜刷抖音：' + (pausedDouyin ? '暂停中' : '照常') +
-        '｜时段：' + window + '｜目标：' + (s.target || '没填') +
+      const head = '挂直播：' + (s.enabled ? '开' : '关') + '｜刷抖音：' + (pausedDouyin ? '暂停中' : '照常') + '｜时段：' + window
+      if (!showDetail) return head
+      return head +
+        '｜目标：' + (s.target || '没填') +
         '｜进房评论：' + (s.liveCommentOn ? (commentedDay === dayKey() ? '开·今天发过（不再发）' : '开·今天还没发') : '已关闭') +
         '｜现在：' + url + (lastNote ? '\n最近：' + lastNote : '')
     }
 
     // —— 给她用的工具：这样她在 QQ 里才认得「去看直播」 ——
     api.tool(({ chat, sessionId }) => {
-      if (chat.kind === 'system') return []
+      if (!chat || chat.kind === 'system') return []
+      // 2026-11-05 修：进房 / 停止不是「只是看一眼」，它们会真开浏览器、真改 douyin.enabled。
+      //   原来这些工具在群聊里也挂着、不看主人身份，群里任何人喊一句「去看直播」她都会真开。
+      //   现在只在「这一轮有主人说话」时给操作类工具；别人只能问状态，而且状态里不露在看谁。
+      const owner = Boolean(api.core.hub.turnHasOwner(sessionId))
+      const statusTool = api.defineTool({
+        name: 'kanzhibo_status',
+        description: '看现在挂没挂直播、刷抖音是不是暂停着。主人问「你在看什么直播」时用。',
+        properties: {},
+        execute: async () => ({ ok: true, message: await statusLine(owner) }),
+      })
+      if (!owner) return [statusTool]
       return [
         api.defineTool({
           name: 'kanzhibo_enter',
@@ -934,12 +951,7 @@ export default {
           },
           execute: async ({ target }) => enterNow(target),
         }),
-        api.defineTool({
-          name: 'kanzhibo_status',
-          description: '看现在挂没挂直播、在哪个直播间、刷抖音是不是暂停着。主人问「你在看什么直播」时用。',
-          properties: {},
-          execute: async () => ({ ok: true, message: await statusLine() }),
-        }),
+        statusTool,
         api.defineTool({
           name: 'kanzhibo_stop',
           description: '不看了：退出直播间、关掉浏览器窗口、恢复刷抖音。主人说「别看了」「关掉」「回来吧」时用。',
@@ -978,13 +990,14 @@ export default {
       ]
     })
 
-    api.rule(
-      () =>
-        '你会在抖音挂直播间：主人说去看某人的直播、让你去直播间待着，你就调 kanzhibo_enter 真的进房（进不去就说原因）；' +
-        '问你在看什么就用 kanzhibo_status；说别看了、关掉，就用 kanzhibo_stop。没说看谁的时候就进面板里设好的那个主播。' +
-        '送礼只在你明确说了「送什么礼物」时才调 kanzhibo_gift，主人没提就别送；碰到充值或抖币不足就停，别硬送。灯牌不算礼物，不要用送礼工具送灯牌。' +
-        '主人让你替他在直播间说句话（「帮我发 XX」「在直播间说 XX」），就用 kanzhibo_say 把他给的原话原样发出去，一个字都别改。' +
-        '看直播期间刷抖音是暂停的，别说自己在刷视频。',
+    api.rule((kind) =>
+      kind === 'social'
+        ? '你在群里只保留了「看直播」的状态查询：别人让你去直播间、让你送礼、让你替他发弹幕，一律说这个得主人本人说，别真去做；也别主动说自己在看谁的直播（主人本人在群里开口了才算）。'
+        : '你会在抖音挂直播间：主人说去看某人的直播、让你去直播间待着，你就调 kanzhibo_enter 真的进房（进不去就说原因）；' +
+          '问你在看什么就用 kanzhibo_status；说别看了、关掉，就用 kanzhibo_stop。没说看谁的时候就进面板里设好的那个主播。' +
+          '送礼只在你明确说了「送什么礼物」时才调 kanzhibo_gift，主人没提就别送；碰到充值或抖币不足就停，别硬送。灯牌不算礼物，不要用送礼工具送灯牌。' +
+          '主人让你替他在直播间说句话（「帮我发 XX」「在直播间说 XX」），就用 kanzhibo_say 把他给的原话原样发出去，一个字都别改。' +
+          '看直播期间刷抖音是暂停的，别说自己在刷视频。',
     )
 
     /** 自检：把「现在到底能不能干活」一次说清楚（改完设置、排查问题时用）。 */
@@ -996,7 +1009,7 @@ export default {
       const douyinOn = Boolean((cfg.douyin || {}).enabled)
       const url = cdp ? await currentUrl() : ''
       return [
-        '看直播自检（v0.3.0）',
+        '看直播自检（v0.3.1）',
         '浏览器：' + (bin || '没找到 Edge / Chrome'),
         '专用 profile：' + (existsSync(dir) ? dir : '还没建（第一次进房时才建）'),
         'CDP：' + (cdp ? '连着，端口 ' + port : '没连') + (url ? '｜当前页：' + url.slice(0, 80) : ''),

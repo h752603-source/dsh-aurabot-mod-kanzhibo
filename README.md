@@ -21,14 +21,14 @@
 ```powershell
 # Windows
 $dst = "$env:USERPROFILE\.dsh\plugins-data\aurabot\modules\kanzhibo"
-New-Item -ItemType Directory -Force "$dst\verify" | Out-Null
+New-Item -ItemType Directory -Force "$dst\test" | Out-Null
 Copy-Item .\module\* -Destination $dst -Recurse -Force
 ```
 
 ```bash
 # macOS / Linux
 dst=~/.dsh/plugins-data/aurabot/modules/kanzhibo
-mkdir -p "$dst/verify" && cp -R module/. "$dst"/
+mkdir -p "$dst/test" && cp -R module/. "$dst"/
 ```
 
 保存后 3~5 秒插件自动重载（不用重启）。日志里出现
@@ -37,22 +37,22 @@ mkdir -p "$dst/verify" && cp -R module/. "$dst"/
 ## 装法二：走「模块市场」
 
 1. 设置环境变量指向本仓库的索引：
-   `AURABOT_REGISTRY_URL=https://raw.githubusercontent.com/OWNER/REPO/main/registry/index.json`
+   `AURABOT_REGISTRY_URL=https://raw.githubusercontent.com/h752603-source/dsh-aurabot-mod-kanzhibo/main/registry/index.json`
 2. 重启插件 → 面板「模块市场」刷新 → 安装 `kanzhibo`
 
 `raw.githubusercontent.com` 打不开（国内常见）就换成 CDN 那份索引，`pack.mjs` 会自动生成 `registry/index-cdn.json`：
 
 ```
-AURABOT_REGISTRY_URL=https://cdn.jsdelivr.net/gh/OWNER/REPO@main/registry/index-cdn.json
+AURABOT_REGISTRY_URL=https://cdn.jsdelivr.net/gh/h752603-source/dsh-aurabot-mod-kanzhibo@main/registry/index-cdn.json
 ```
 
-> `OWNER/REPO` 换成实际账号：跑 `node tools/pack.mjs --owner=<你的用户名>` 会自动把 `assetsBase` 写对。
+> 本仓库的 `assetsBase` 已经按 `h752603-source/dsh-aurabot-mod-kanzhibo` 写好；换了账号再跑一次 `node tools/pack.mjs --owner=<新用户名>`。
 
 ## 装完怎么验
 
 ```bash
-node verify/verify.mjs                 # 33 项逻辑检查，期望「0 失败」
-set LIVE=1 && node verify/verify.mjs   # 再加 3 项：真起 Edge / CDP 连上 / 收工能关（会弹一下窗口）
+node test/verify.mjs                 # 36 项逻辑检查，期望「0 失败」
+set LIVE=1 && node test/verify.mjs   # 再加 3 项：真起 Edge / CDP 连上 / 收工能关（会弹一下窗口）
 ```
 
 QQ 里发 `/看直播 自检`，会给一份体检单：浏览器路径、专用 profile、CDP 端口、时段在不在内、
@@ -86,10 +86,11 @@ QQ 里发 `/看直播 自检`，会给一份体检单：浏览器路径、专用
 ├─ module/                    ← 模块本体：把它整个拷进 modules/kanzhibo/
 │  ├─ index.mjs               ← 入口（全部逻辑都在这一个文件里）
 │  ├─ module.json             ← 元数据（模块市场 / 校验用）
-│  ├─ README.md               ← 模块文档：设置项、判定规则、变更
-│  └─ verify/verify.mjs       ← 离线自检脚本（假 api，不发 QQ、不碰真配置）
+│  ├─ README.md               ← 模块文档：设置项、判定规则、会访问什么、变更
+│  ├─ LICENSE                 ← MIT
+│  └─ test/verify.mjs         ← 离线自检脚本（假 api，不发 QQ、不碰真配置）
 ├─ registry/
-│  ├─ kanzhibo-0.3.0.zip      ← 可直接安装的包（zip 根目录 = 模块内容）
+│  ├─ kanzhibo-0.3.1.zip      ← 可直接安装的包（zip 根目录 = 模块内容）
 │  └─ index.json              ← 模块市场索引（schema 1，带 sha256）
 ├─ docs/
 │  ├─ how.png                 ← 仓库首页那张链路图
